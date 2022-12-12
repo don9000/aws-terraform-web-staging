@@ -1,0 +1,140 @@
+---
+-
+  hosts: localhost
+  gather_facts: false
+  tasks:
+    -
+      name: "Increase Bash History Limit 1"
+      lineinfile: "dest=/home/ubuntu/.bashrc regexp='^HISTSIZE' line=\"HISTSIZE=1000000\" state=present"
+    -
+      name: "Increase Bash History Limit 2"
+      lineinfile: "dest=/home/ubuntu/.bashrc regexp='^HISTFILESIZE' line=\"HISTFILESIZE=2000000\" state=present"
+    -
+      name: Modify soft nofile limits for wildcard domain
+      become: true
+      pam_limits: "domain=\"*\" limit_type=soft limit_item=nofile value=65536"
+    -
+      name: Modify hard nofile limits for wildcard domain
+      become: true
+      pam_limits: "domain=\"*\" limit_type=hard limit_item=nofile value=65536"
+    -
+      name: Install Nodejs 16 LTS
+      become: true
+      shell: "curl -sL https://deb.nodesource.com/setup_16.x | sudo -E bash - && sudo apt-get install -y nodejs"
+    -
+      name: Install PM2 node.js package globally.
+      become: true
+      npm:
+        name: pm2
+        global: yes
+    -
+      name: Clone Proxy Repo
+      git:
+        repo: git@github.com:OlarmTech/web-proxy.git
+        dest: /home/ubuntu/actions-runner/_work/web-proxy/web-proxy
+        accept_hostkey: yes
+        version: main
+        update: yes
+        key_file: /home/ubuntu/.ssh/id_rsa_proxy_github1
+    -
+      name: Install Proxy Repo Packages
+      community.general.npm:
+        ci: yes
+        path: /home/ubuntu/actions-runner/_work/web-proxy/web-proxy
+    -
+      name: Change SSH key for Proxy Repo
+      ansible.builtin.replace:
+        path: /home/ubuntu/actions-runner/_work/web-proxy/web-proxy/.git/config
+        regexp: 'github.com'
+        replace: 'proxy.github.com'
+    
+    -
+      name: Clone Login Repo
+      git:
+        repo: git@github.com:OlarmTech/web-login.git
+        dest: /home/ubuntu/actions-runner/_work/web-login/web-login
+        accept_hostkey: yes
+        version: development
+        update: yes
+        key_file: /home/ubuntu/.ssh/id_rsa_login_github1
+    -
+      name: Set NODE_ENV=development
+      shell: export NODE_ENV=development
+    -
+      name: Install Login Repo Packages
+      community.general.npm:
+        ci: yes
+        path: /home/ubuntu/actions-runner/_work/web-login/web-login
+    -
+      name: Set NODE_ENV=production
+      shell: export NODE_ENV=production
+    -
+      name: Build Login Repo
+      shell: npm run build
+      args:
+        chdir: /home/ubuntu/actions-runner/_work/web-login/web-login
+    -
+      name: Change SSH key for Login Repo
+      ansible.builtin.replace:
+        path: /home/ubuntu/actions-runner/_work/web-login/web-login/.git/config
+        regexp: 'github.com'
+        replace: 'login.github.com'
+    
+    -
+      name: Clone Userportal Repo
+      git:
+        repo: git@github.com:OlarmTech/web-userportal.git
+        dest: /home/ubuntu/actions-runner/_work/web-userportal/web-userportal
+        accept_hostkey: yes
+        version: development
+        update: yes
+        key_file: /home/ubuntu/.ssh/id_rsa_userportal_github1
+    -
+      name: Set NODE_ENV=development
+      shell: export NODE_ENV=development
+    -
+      name: Install Userportal Repo Packages
+      community.general.npm:
+        ci: yes
+        path: /home/ubuntu/actions-runner/_work/web-userportal/web-userportal
+    -
+      name: Set NODE_ENV=production
+      shell: export NODE_ENV=production
+    -
+      name: Build Userportal Repo
+      shell: npm run build
+      args:
+        chdir: /home/ubuntu/actions-runner/_work/web-userportal/web-userportal
+    -
+      name: Change SSH key for Userportal Repo
+      ansible.builtin.replace:
+        path: /home/ubuntu/actions-runner/_work/web-userportal/web-userportal/.git/config
+        regexp: 'github.com'
+        replace: 'userportal.github.com'
+    
+    -
+      name: Clone CC Repo
+      git:
+        repo: git@github.com:OlarmTech/web-commandcentre.git
+        dest: /home/ubuntu/actions-runner/_work/web-commandcentre/web-commandcentre
+        accept_hostkey: yes
+        version: development
+        update: yes
+        key_file: /home/ubuntu/.ssh/id_rsa_cc_github1
+    -
+      name: Set NODE_ENV=development
+      shell: export NODE_ENV=development
+    -
+      name: Install CC Repo Packages
+      community.general.npm:
+        ci: yes
+        path: /home/ubuntu/actions-runner/_work/web-commandcentre/web-commandcentre
+    -
+      name: Set NODE_ENV=production
+      shell: export NODE_ENV=production
+    -
+      name: Change SSH key for CC Repo
+      ansible.builtin.replace:
+        path: /home/ubuntu/actions-runner/_work/web-commandcentre/web-commandcentre/.git/config
+        regexp: 'github.com'
+        replace: 'cc.github.com'

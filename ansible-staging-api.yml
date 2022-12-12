@@ -1,0 +1,49 @@
+---
+    -
+      hosts: localhost
+      gather_facts: false
+      tasks:
+        -
+          name: "Increase Bash History Limit 1"
+          lineinfile: "dest=/home/ubuntu/.bashrc regexp='^HISTSIZE' line=\"HISTSIZE=1000000\" state=present"
+        -
+          name: "Increase Bash History Limit 2"
+          lineinfile: "dest=/home/ubuntu/.bashrc regexp='^HISTFILESIZE' line=\"HISTFILESIZE=2000000\" state=present"
+        -
+          name: Modify soft nofile limits for wildcard domain
+          become: true
+          pam_limits: "domain=\"*\" limit_type=soft limit_item=nofile value=65536"
+        -
+          name: Modify hard nofile limits for wildcard domain
+          become: true
+          pam_limits: "domain=\"*\" limit_type=hard limit_item=nofile value=65536"
+        -
+          name: Install Nodejs 16 LTS
+          become: true
+          shell: "curl -sL https://deb.nodesource.com/setup_16.x | sudo -E bash - && sudo apt-get install -y nodejs"
+        -
+          name: Install PM2 node.js package globally.
+          become: true
+          npm:
+            name: pm2
+            global: yes
+        -
+          name: Clone API Repo
+          git:
+            repo: git@github.com:OlarmTech/olarm-api.git
+            dest: /home/ubuntu/actions-runner/_work/olarm-api/olarm-api
+            accept_hostkey: yes
+            version: development
+            update: yes
+            key_file: /home/ubuntu/.ssh/id_rsa_apiv4_github1
+        -
+          name: Install API Repo Packages
+          community.general.npm:
+            ci: yes
+            path: /home/ubuntu/actions-runner/_work/olarm-api/olarm-api
+        -
+          name: Change SSH key for API Repo
+          ansible.builtin.replace:
+            path: /home/ubuntu/actions-runner/_work/olarm-api/olarm-api/.git/config
+            regexp: 'github.com'
+            replace: 'api.github.com'
